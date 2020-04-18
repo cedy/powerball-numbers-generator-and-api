@@ -1,0 +1,21 @@
+CREATE TABLE tale (
+  hash BIGINT UNSIGNED,
+  digit1 TINYINT UNSIGNED,
+  digit2 TINYINT UNSIGNED,
+  digit3 TINYINT UNSIGNED,
+  digit4 TINYINT UNSIGNED,
+  digit5 TINYINT UNSIGNED,
+  pb TINYINT UNSIGNED,
+  count BIGINT UNSIGNED,
+  time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (hash),
+  INDEX (count),
+  INDEX (digit1),
+  INDEX (digit2),
+  INDEX (digit3),
+  INDEX (digit4),
+  INDEX (digit5),
+  INDEX (pb),
+  INDEX (time, hash)
+);
+
