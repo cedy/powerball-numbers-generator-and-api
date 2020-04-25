@@ -11,7 +11,7 @@ import (
 var db *sql.DB
 
 func home(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"data": "Hello world!"})
+	c.HTML(http.StatusOK, "index.html", nil)
 }
 
 func historyLast(c *gin.Context) {
@@ -91,7 +91,9 @@ func main() {
 	stopChan := make(chan int)
 	go GenerateCombinations(numbersChan, stopChan)
 	go WriteCombinationsToDB(db, numbersChan)
+	r.LoadHTMLGlob("static/*.html")
 	r.GET("/", home)
+	r.GET("/ws", serveWs)
 	r.GET("/history/last/:last", historyLast)
 	r.GET("/count/:count", byCount)
 	r.GET("/date/:year", byDate)
