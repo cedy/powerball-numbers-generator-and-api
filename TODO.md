@@ -2,9 +2,9 @@
 - [x] item todo (preferred language/framework to use) {time estimate in hours} 
    * - in progress
 
-- [*] create websocket backend and will send data from web/combination_generator.go to the frontend
+- [x] create websocket backend that will send data from web/combination_generator.go to the frontend
 
-- [] create front end for an api [React] {20}. Something simple. Powerball numbers will be parsed and showed in a one column list, and then compared to the random generated numbers in other list.
+- [] create front end for the api [React] {20}. Something simple. Powerball numbers will be parsed and showed in a one column list, and then compared to the random generated numbers in other list.
 
 - [] add tests for api, add search by number api. {5} 
 

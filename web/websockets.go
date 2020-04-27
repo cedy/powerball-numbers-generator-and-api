@@ -38,19 +38,21 @@ func reader(ws *websocket.Conn) {
 	}
 }
 
-func writer(ws *websocket.Conn) {
+func writer(ws *websocket.Conn, commBroadcastChan chan chan string) {
 	pingTicker := time.NewTicker(pingPeriod)
-	msgTicker := time.NewTicker(time.Second)
+	// create a channel and append in to the dataChanList, so we can start receiving messages
+	dataChan := make(chan string, 100)
+	commBroadcastChan <- dataChan
 	defer func() {
+		commBroadcastChan <- dataChan
 		pingTicker.Stop()
-		msgTicker.Stop()
 		ws.Close()
 	}()
 	for {
 		select {
-		case <-msgTicker.C:
+		case combination := <-dataChan:
 
-			msg := []byte("message")
+			msg := []byte(combination)
 
 			if msg != nil {
 				ws.SetWriteDeadline(time.Now().Add(writeWait))
@@ -68,15 +70,19 @@ func writer(ws *websocket.Conn) {
 	}
 }
 
-func serveWs(c *gin.Context) {
-	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		if _, ok := err.(websocket.HandshakeError); !ok {
-			fmt.Println(err.Error())
-		}
-		return
-	}
+func serveWs(broadcastCommChan chan chan string) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
 
-	go writer(ws)
-	reader(ws)
+		ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+		if err != nil {
+			if _, ok := err.(websocket.HandshakeError); !ok {
+				fmt.Println(err.Error())
+			}
+			return
+		}
+
+		go writer(ws, broadcastCommChan)
+		reader(ws)
+	}
+	return gin.HandlerFunc(fn)
 }

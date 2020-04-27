@@ -12,11 +12,9 @@
                 conn.onclose = function(evt) {
                     data.textContent = 'Connection closed';
                 }
-                var counter = 0; 
                 conn.onmessage = function(evt) {
                     console.log('message received');
-                    data.textContent = evt.data + counter;
-                    counter++;
+                    data.textContent = evt.data;
                 }
             };
         </script>
