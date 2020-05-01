@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"net/http"
+	"strings"
 	"time"
 )
 
@@ -73,6 +75,14 @@ func writer(ws *websocket.Conn, commBroadcastChan chan chan string) {
 func serveWs(broadcastCommChan chan chan string) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 
+		upgrader.CheckOrigin = func(r *http.Request) bool {
+			// Allow only local connections
+			ip := strings.Split(r.RemoteAddr, ":")[0]
+			if ip == "127.0.0.1" || ip == "localhost" {
+				return true
+			}
+			return false
+		}
 		ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
 			if _, ok := err.(websocket.HandshakeError); !ok {
