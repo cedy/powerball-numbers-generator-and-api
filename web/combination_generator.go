@@ -38,6 +38,7 @@ func GenerateCombinations(numbersChan chan<- []int, broadcastChan chan<- []int, 
 			numbers[5] = int(random.Int31n(26)) + 1
 			numbersChan <- numbers
 			broadcastChan <- numbers
+			time.Sleep(time.Millisecond * 500)
 		}
 	}
 }
@@ -47,8 +48,13 @@ func WriteCombinationsToDB(db *sql.DB, numbersChan <-chan []int) {
 		if len(numbers) == 0 {
 			return
 		}
-		query := fmt.Sprintf(`INSERT INTO tale (hash, digit1, digit2, digit3, digit4, digit5, pb, count) VALUES 
-				 (%d%d%d%d%d%d, %d, %d, %d, %d, %d, %d, 1) ON DUPLICATE KEY UPDATE count = count + 1;`,
+		query := fmt.Sprintf(`INSERT INTO tale (hash, digit1, digit2, digit3, digit4, digit5, pb, count, dayCount, weekCount, yearCount) VALUES 
+							 (%d%d%d%d%d%d, %d, %d, %d, %d, %d, %d, 1, 1, 1, 1) 
+							 ON DUPLICATE KEY UPDATE 
+							 count = count + 1,
+							 dayCount = dayCount + 1,
+							 weekCount = weekCount + 1,
+							 yearCount = yearCount + 1;`,
 			numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5],
 			numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5])
 		insert, err := db.Query(query)

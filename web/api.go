@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 var db *sql.DB
@@ -23,7 +25,7 @@ func historyLast(c *gin.Context) {
 			numberOfLastCombinations = -numberOfLastCombinations
 		}
 		condition := fmt.Sprintf("LIMIT %d", numberOfLastCombinations)
-		combinations, err := getNumbersBy(condition, db)
+		combinations, err := getNumbers(condition, db)
 		if err != nil {
 			fmt.Println(err.Error())
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "DB err. "})
@@ -41,7 +43,7 @@ func byCount(c *gin.Context) {
 		return
 	}
 	condition := fmt.Sprintf("WHERE count = %d", count)
-	combinations, err := getNumbersBy(condition, db)
+	combinations, err := getNumbers(condition, db)
 	if err != nil {
 		fmt.Println(err.Error())
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "DB err. "})
@@ -59,7 +61,7 @@ func byDate(c *gin.Context) {
 		return
 	}
 	condition := fmt.Sprintf("WHERE time LIKE '%s%%'", dateString)
-	combinations, err := getNumbersBy(condition, db)
+	combinations, err := getNumbers(condition, db)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -76,7 +78,7 @@ func byHash(c *gin.Context) {
 		return
 	}
 	condition := fmt.Sprintf("WHERE hash = %s", hash)
-	combinations, err := getNumbersBy(condition, db)
+	combinations, err := getNumbers(condition, db)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -86,6 +88,17 @@ func byHash(c *gin.Context) {
 
 func main() {
 	r := gin.Default()
+	config := cors.DefaultConfig()
+	config.AllowOriginFunc =
+		func(r string) bool {
+			// Allow only local connections
+			ip := strings.Split(r[7:], ":")[0]
+			if ip == "127.0.0.1" || ip == "localhost" {
+				return true
+			}
+			return false
+		}
+	r.Use(cors.New(config))
 	db = setupConnection()
 	numbersChan := make(chan []int, 100)
 	stopChan := make(chan int)

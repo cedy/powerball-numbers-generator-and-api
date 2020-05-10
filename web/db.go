@@ -11,20 +11,30 @@ import (
 )
 
 type combinationsData struct {
-	Digit1 int       `db:"digit1" json:"digit1"`
-	Digit2 int       `db:"digit2" json:"digit2"`
-	Digit3 int       `db:"digit3" json:"digit3"`
-	Digit4 int       `db:"digit4" json:"digit4"`
-	Digit5 int       `db:"digit5" json:"digit5"`
-	Pb     int       `db:"pb" json:"powerball"`
-	Count  int       `db:"count" json:"count,omitempty"`
-	Time   time.Time `db:"time" json:"time"`
+	Digit1    int       `db:"digit1" json:"digit1"`
+	Digit2    int       `db:"digit2" json:"digit2"`
+	Digit3    int       `db:"digit3" json:"digit3"`
+	Digit4    int       `db:"digit4" json:"digit4"`
+	Digit5    int       `db:"digit5" json:"digit5"`
+	Pb        int       `db:"pb" json:"powerball"`
+	Count     int       `db:"count" json:"count,omitempty"`
+	DayCount  int       `db:"dayCount" json:"dayCount"`
+	WeekCount int       `db:"weekCount" json:"weekCount"`
+	YearCount int       `db:"yearCount" json:"yearCount"`
+	Time      time.Time `db:"time" json:"time"`
 }
 
 func (comb *combinationsData) numbersFormatted() *map[string]string {
 	numbers := fmt.Sprintf("%d %d %d %d %d %d", comb.Digit1, comb.Digit2, comb.Digit3, comb.Digit4, comb.Digit5, comb.Pb)
 	time := comb.Time.Format("Mon Jan 2 2006")
-	return &map[string]string{"count": strconv.Itoa(comb.Count), "date": time, "numbers": numbers}
+	return &map[string]string{
+		"count":     strconv.Itoa(comb.Count),
+		"dayCount":  strconv.Itoa(comb.DayCount),
+		"weekCount": strconv.Itoa(comb.WeekCount),
+		"yearCount": strconv.Itoa(comb.YearCount),
+		"date":      time,
+		"numbers":   numbers,
+	}
 }
 
 func (comb *combinationsData) getHash() (string, error) {
@@ -107,8 +117,8 @@ func setupConnection() *sql.DB {
 	return db
 }
 
-func getNumbersBy(conditional string, db *sql.DB) (*[]*map[string]string, error) {
-	query := fmt.Sprintf("SELECT digit1, digit2, digit3, digit4, digit5, pb, count, time FROM tale %v", conditional)
+func getNumbers(conditional string, db *sql.DB) (*[]*map[string]string, error) {
+	query := fmt.Sprintf("SELECT digit1, digit2, digit3, digit4, digit5, pb, count, dayCount, weekCount, yearCount, time from tale  %v", conditional)
 	results, err := db.Query(query)
 	if err != nil {
 		return nil, err
@@ -116,7 +126,8 @@ func getNumbersBy(conditional string, db *sql.DB) (*[]*map[string]string, error)
 	combinations := make([]*map[string]string, 0, len(query))
 	var result combinationsData
 	for results.Next() {
-		results.Scan(&result.Digit1, &result.Digit2, &result.Digit3, &result.Digit4, &result.Digit5, &result.Pb, &result.Count, &result.Time)
+		results.Scan(&result.Digit1, &result.Digit2, &result.Digit3, &result.Digit4, &result.Digit5, &result.Pb, &result.Count, &result.DayCount,
+			&result.WeekCount, &result.YearCount, &result.Time)
 		combinations = append(combinations, result.numbersFormatted())
 	}
 	return &combinations, nil
