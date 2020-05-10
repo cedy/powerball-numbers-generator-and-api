@@ -4,7 +4,9 @@
 
 - [x] create websocket backend that will send data from web/combination_generator.go to the frontend
 
-- [] create front end for the api [React] {20}. Something simple. Powerball numbers will be parsed and showed in a one column list, and then compared to the random generated numbers in other list.
+- [*] create front end for the api [React] {20}. Something simple. Powerball numbers will be parsed and showed in a one column list, and then compared to the random generated numbers in other list.
+
+- [*] clear daily, weekly, monthly, yearly counts every day, week, month, year
 
 - [] add tests for api, add search by number api. {5} 
 
