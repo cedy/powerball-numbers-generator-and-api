@@ -25,7 +25,7 @@ func historyLast(c *gin.Context) {
 			numberOfLastCombinations = -numberOfLastCombinations
 		}
 		condition := fmt.Sprintf("LIMIT %d", numberOfLastCombinations)
-		combinations, err := getNumbers(condition, db)
+		combinations, err := getNumbersHistory(condition, db)
 		if err != nil {
 			fmt.Println(err.Error())
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "DB err. "})

@@ -119,17 +119,32 @@ func setupConnection() *sql.DB {
 	return db
 }
 
-func getNumbers(conditional string, db *sql.DB) (*[]*map[string]string, error) {
-	query := fmt.Sprintf("SELECT digit1, digit2, digit3, digit4, digit5, pb, count, dayCount, weekCount, monthCount, yearCount, time from tale  %v", conditional)
+func getNumbers(condition string, db *sql.DB) (*[]*map[string]string, error) {
+	query := fmt.Sprintf("SELECT digit1, digit2, digit3, digit4, digit5, pb, count, dayCount, weekCount, monthCount, yearCount, time from tale  %v", condition)
 	results, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	combinations := make([]*map[string]string, 0, len(query))
+	combinations := make([]*map[string]string, 0)
 	var result combinationsData
 	for results.Next() {
 		results.Scan(&result.Digit1, &result.Digit2, &result.Digit3, &result.Digit4, &result.Digit5, &result.Pb, &result.Count, &result.DayCount,
 			&result.WeekCount, &result.MonthCount, &result.YearCount, &result.Time)
+		combinations = append(combinations, result.numbersFormatted())
+	}
+	return &combinations, nil
+}
+
+func getNumbersHistory(condition string, db *sql.DB) (*[]*map[string]string, error) {
+	query := fmt.Sprintf("SELECT digit1, digit2, digit3, digit4, digit5, pb, time from history %v", condition)
+	results, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	combinations := make([]*map[string]string, 0)
+	var result combinationsData
+	for results.Next() {
+		results.Scan(&result.Digit1, &result.Digit2, &result.Digit3, &result.Digit4, &result.Digit5, &result.Pb, &result.Time)
 		combinations = append(combinations, result.numbersFormatted())
 	}
 	return &combinations, nil
