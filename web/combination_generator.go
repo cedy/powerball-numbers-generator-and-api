@@ -43,10 +43,11 @@ func GenerateCombinations(numbersChan chan<- []int, broadcastChan chan<- []int, 
 	}
 }
 
-func WriteCombinationsToDB(db *sql.DB, numbersChan <-chan []int) {
-	for numbers := range numbersChan {
+func WriteCombinationsToDB(db *sql.DB, numbersChan chan []int) {
+	for {
+		numbers := <-numbersChan
 		if len(numbers) == 0 {
-			return
+			continue
 		}
 		query := fmt.Sprintf(`INSERT INTO tale (hash, digit1, digit2, digit3, digit4, digit5, pb, count, dayCount, weekCount, monthCount, yearCount) VALUES 
 							 (%d%d%d%d%d%d, %d, %d, %d, %d, %d, %d, 1, 1, 1, 1, 1) 
@@ -61,6 +62,9 @@ func WriteCombinationsToDB(db *sql.DB, numbersChan <-chan []int) {
 		insert, err := db.Query(query)
 		if err != nil {
 			fmt.Println(err.Error())
+			numbersChan <- numbers
+			time.Sleep(5 * time.Second)
+			continue
 		}
 		insert.Close()
 	}

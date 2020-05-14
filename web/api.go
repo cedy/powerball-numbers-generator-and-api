@@ -104,6 +104,7 @@ func main() {
 	stopChan := make(chan int)
 	broadcastChan := make(chan []int, 100)
 	broadcastCommChan := make(chan chan string, 100)
+	go resetCounts(db)
 	go GenerateCombinations(numbersChan, broadcastChan, stopChan)
 	go WriteCombinationsToDB(db, numbersChan)
 	go BroadcastCombinations(broadcastChan, broadcastCommChan)

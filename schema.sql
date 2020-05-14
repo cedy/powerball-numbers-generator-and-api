@@ -16,7 +16,7 @@ CREATE TABLE tale (
   INDEX (count),
   INDEX (dayCount),
   INDEX (weekCount),
-  INDEX (monthCount)
+  INDEX (monthCount),
   INDEX (yearCount),
   INDEX (digit1),
   INDEX (digit2),

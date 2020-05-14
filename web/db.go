@@ -119,6 +119,70 @@ func setupConnection() *sql.DB {
 	return db
 }
 
+func handleTransactionError(err error, db *sql.DB, tx *sql.Tx) {
+	if err != nil {
+		tx.Rollback()
+		fmt.Println(err.Error())
+		time.Sleep(10 * time.Second)
+		go resetCounts(db)
+	}
+}
+func resetCounts(db *sql.DB) {
+	recentlyReset := false
+	for {
+		currentTime := time.Now()
+		if currentTime.Hour() == 3 && !recentlyReset {
+			tx, err := db.Begin()
+			handleTransactionError(err, db, tx)
+			query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN dayCount;")
+			_, err = tx.Exec(query)
+			handleTransactionError(err, db, tx)
+			query = fmt.Sprintf("ALTER TABLE tale CREATE COLUMN dayCount INT UNSIGNED DEFAULT 0 AFTER count;")
+			_, err = tx.Exec(query)
+			handleTransactionError(err, db, tx)
+			if currentTime.Weekday() == time.Monday {
+				tx, err := db.Begin()
+				handleTransactionError(err, db, tx)
+				query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN weekCount;")
+				_, err = tx.Exec(query)
+				handleTransactionError(err, db, tx)
+				query = fmt.Sprintf("ALTER TABLE tale CREATE COLUMN weekCount INT UNSIGNED DEFAULT 0 AFTER dayCount;")
+				_, err = tx.Exec(query)
+				handleTransactionError(err, db, tx)
+			}
+			if currentTime.Day() == 1 {
+				tx, err := db.Begin()
+				handleTransactionError(err, db, tx)
+				query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN monthCount;")
+				_, err = tx.Exec(query)
+				handleTransactionError(err, db, tx)
+				query = fmt.Sprintf("ALTER TABLE tale CREATE COLUMN monthCount INT UNSIGNED DEFAULT 0 AFTER weekCount;")
+				_, err = tx.Exec(query)
+
+				if currentTime.Month() == time.January {
+					tx, err := db.Begin()
+					handleTransactionError(err, db, tx)
+					query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN yearCount;")
+					_, err = tx.Exec(query)
+					handleTransactionError(err, db, tx)
+					query = fmt.Sprintf("ALTER TABLE tale CREATE COLUMN yearCount INT UNSIGNED DEFAULT 0 AFTER monthCount;")
+					_, err = tx.Exec(query)
+				}
+			}
+			err = tx.Commit()
+			if err != nil {
+				go resetCounts(db)
+				return
+			}
+			recentlyReset = true
+		}
+		time.Sleep(60 * time.Second)
+		if currentTime.Hour() == 4 && recentlyReset {
+			recentlyReset = false
+		}
+	}
+}
+
 func getNumbers(condition string, db *sql.DB) (*[]*map[string]string, error) {
 	query := fmt.Sprintf("SELECT digit1, digit2, digit3, digit4, digit5, pb, count, dayCount, weekCount, monthCount, yearCount, time from tale  %v", condition)
 	results, err := db.Query(query)
