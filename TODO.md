@@ -6,7 +6,9 @@
 
 - [*] create front end for the api [React] {20}. Something simple. Powerball numbers will be parsed and showed in a one column list, and then compared to the random generated numbers in other list.
 
-- [*] clear daily, weekly, monthly, yearly counts every day, week, month, year
+- [x] clear daily, weekly, monthly, yearly counts every day, week, month, year
+
+- [*] create historical numbers loader
 
 - [] add tests for api, add search by number api. {5} 
 
