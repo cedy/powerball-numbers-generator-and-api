@@ -24,7 +24,7 @@ func historyLast(c *gin.Context) {
 		if numberOfLastCombinations < 0 {
 			numberOfLastCombinations = -numberOfLastCombinations
 		}
-		condition := fmt.Sprintf("LIMIT %d", numberOfLastCombinations)
+		condition := fmt.Sprintf("ORDER BY time DESC LIMIT %d", numberOfLastCombinations)
 		combinations, err := getNumbersHistory(condition, db)
 		if err != nil {
 			fmt.Println(err.Error())

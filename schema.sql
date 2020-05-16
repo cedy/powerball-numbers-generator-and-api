@@ -36,7 +36,7 @@ CREATE TABLE history (
   digit5 TINYINT UNSIGNED,
   pb TINYINT UNSIGNED,
   time DATETIME DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (hash),
+  PRIMARY KEY (hash, time),
   INDEX (digit1),
   INDEX (digit2),
   INDEX (digit3),
