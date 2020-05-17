@@ -1,0 +1,121 @@
+body {
+  margin: 0;
+  font-family:  'Roboto', 'Oxygen','Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+.menu-text {
+    font-family:i "Segoe UI", Arial, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-weight: 800;
+    font-size: 1.2em;
+}
+
+.table td {
+    text-align: center;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.2em;
+}
+.main-container {
+  display: block ;
+  width: auto;
+  margin: 2% 8%;
+}
+
+@media only screen and (max-width:600px) {
+    .main-container {
+        margin: 2% 0;
+    }
+}
+.numbers {
+  display: inline-block;
+  vertical-align: top;
+  margin: 7px;
+  background-color: transparent;
+  height: 25px;
+  min-width: 220px;
+  perspective: 1000px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+  transition: all 400ms ease-in-out;
+  animation: eMLfYp 600ms linear;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 1s;
+  transform-style: preserve-3d;
+  color: #333;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.07em;
+  display: block;
+  margin-block-start: 0em;
+  margin-block-end: 0em;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+}
+
+.numbers:hover .flip-card-inner {
+    transform: rotateX(180deg);
+}
+.numbers-front{
+  display: block;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.numbers-front, .count-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding-top: 3px;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+
+}
+.count-back {
+    background-color: #abb8c18f;
+    transform: rotateX(180deg);
+}
+
+
+.count-text-static .count-back {
+    background-color: #abb8c18f;
+    transform: rotateX(180deg);
+}
+
+.count-text-static .flip-card-inner {
+    transform: rotateX(180deg);
+}
+
+.shake-animation {
+    animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+@keyframes shake {
+  10%, 90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%, 80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%, 50%, 70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%, 60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
