@@ -52,6 +52,25 @@ func byCount(c *gin.Context) {
 	c.JSON(http.StatusOK, combinations)
 }
 
+func byTopCount(c *gin.Context) {
+	// page has 100 records
+	page, err := strconv.Atoi(c.Param("page"))
+	if err != nil || page < 0 {
+		fmt.Println(page)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"err": "Bad argument"})
+		return
+	}
+	// page 1 = Limit 0, 100; page 2 = Limit 100, 100 ...
+	condition := fmt.Sprintf("ORDER by count DESC LIMIT %d, 100;", page*100)
+	combinations, err := getNumbers(condition, db)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "DB err. "})
+		return
+	}
+	c.JSON(http.StatusOK, combinations)
+}
+
 func byDate(c *gin.Context) {
 	var date date
 	c.BindUri(&date)
@@ -113,6 +132,7 @@ func main() {
 	r.GET("/ws", serveWs(broadcastCommChan))
 	r.GET("/history/last/:last", historyLast)
 	r.GET("/count/:count", byCount)
+	r.GET("/top/count/:page", byTopCount)
 	r.GET("/date/:year", byDate)
 	r.GET("/date/:year/:month", byDate)
 	r.GET("/date/:year/:month/:day", byDate)

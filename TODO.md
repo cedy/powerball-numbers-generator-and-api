@@ -12,13 +12,13 @@
 
 - [*] create routing to historical/Top generated and about page 
 
-- [] preload top generated numbers page with top generated numbers, add api funtionality for that
+- [x] preload top generated numbers page with top generated numbers, add api funtionality for that
 
 - [] create a page to display live just generated numbers ?
 
 - [] add pages to the front end: search by number, top generated numbers (by day/week/month/year/all time)
 
-- [] add pagination to historical, top generated numbers
+- [*] add pagination to historical, top generated numbers
 
 - [] add search page ?
 
