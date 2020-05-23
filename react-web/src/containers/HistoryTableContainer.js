@@ -65,14 +65,14 @@ class HistoryTableContainer extends React.Component {
             <div className="main-container">
             <Table striped bordered hover>
                 <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Numbers</th>
-                        <th>{RGNC} Daily</th>
-                        <th>{RGNC} Weekly</th>
-                        <th>{RGNC} Monthly</th>
-                        <th>{RGNC} Yearly</th>
-                        <th>{RGNC} Total</th>
+                    <tr className="text-center">
+                        <th className="align-middle">Date</th>
+                        <th className="align-middle">Numbers</th>
+                        <th className="align-middle">{RGNC} Daily</th>
+                        <th className="align-middle">{RGNC} Weekly</th>
+                        <th className="align-middle">{RGNC} Monthly</th>
+                        <th className="align-middle">{RGNC} Yearly</th>
+                        <th className="align-middle">{RGNC} Total</th>
                     </tr>
                 </thead>
                 <tbody>

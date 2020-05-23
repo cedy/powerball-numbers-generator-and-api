@@ -14,8 +14,8 @@ class HistoryRow extends React.Component {
         return (
         // date, history number, randomly generated number, count
             <tr>
-                <td>{this.props.date}</td>
-                <td>{this.props.numbers}</td>
+                <td className="text-nowrap">{this.props.date}</td>
+                <td className="text-nowrap">{this.props.numbers}</td>
                 <td>{this.props.dayCount}</td>
                 <td>{this.props.weekCount}</td>
                 <td>{this.props.monthCount}</td>

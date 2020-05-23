@@ -10,7 +10,7 @@ function Navigation() {
             <img className="App-logo" src={logo} alt="logo" />
             </Navbar.Brand>
                 <Nav className="menu-text">
-                    <Nav.Link className="mr-2" href="/home">Home</Nav.Link>
+                    <Nav.Link className="mr-2" href="/numbers">Top Generated Numbers</Nav.Link>
                     <Nav.Link className="mr-2" href="/history">History</Nav.Link>    
                     <Nav.Link href="/about">About</Nav.Link>    
                 </Nav>
