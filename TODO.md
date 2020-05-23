@@ -4,15 +4,17 @@
 
 - [x] create websocket backend that will send data from web/combination_generator.go to the frontend
 
-- [*] create front end for the api [React] {20}. Something simple. Powerball numbers will be parsed and showed in a one column list, and then compared to the random generated numbers in other list.
+- [x] create front end for the api [React] {20}. Something simple. Powerball numbers will be parsed and showed in a one column list, and then compared to the random generated numbers in other list.
 
 - [x] clear daily, weekly, monthly, yearly counts every day, week, month, year
 
 - [x] create historical numbers loader
 
-- [*] create routing to historical/Top generated and about page 
+- [x] create routing to historical/Top generated and about page 
 
 - [x] preload top generated numbers page with top generated numbers, add api funtionality for that
+
+- [*] create loader of already generated and dumped numbers
 
 - [] create a page to display live just generated numbers ?
 
