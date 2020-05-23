@@ -14,7 +14,7 @@
 
 - [x] preload top generated numbers page with top generated numbers, add api funtionality for that
 
-- [*] create loader of already generated and dumped numbers
+- [x] create loader of already generated and dumped numbers
 
 - [] create a page to display live just generated numbers ?
 
