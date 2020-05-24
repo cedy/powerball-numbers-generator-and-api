@@ -16,23 +16,21 @@ func home(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", nil)
 }
 
-func historyLast(c *gin.Context) {
-	numberOfLastCombinations, err := strconv.Atoi(c.Param("last"))
-	if err != nil {
+func historyByPage(c *gin.Context) {
+	page, err := strconv.Atoi(c.Param("page"))
+	if err != nil || page < 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"err": "Bad argument"})
-	} else {
-		if numberOfLastCombinations < 0 {
-			numberOfLastCombinations = -numberOfLastCombinations
-		}
-		condition := fmt.Sprintf("ORDER BY time DESC LIMIT %d", numberOfLastCombinations)
-		combinations, err := getNumbersHistory(condition, db)
-		if err != nil {
-			fmt.Println(err.Error())
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "DB err. "})
-			return
-		}
-		c.JSON(http.StatusOK, combinations)
+		return
 	}
+
+	condition := fmt.Sprintf("ORDER BY time DESC LIMIT %d, 100", page*100)
+	combinations, err := getNumbersHistory(condition, db)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "DB err. "})
+		return
+	}
+	c.JSON(http.StatusOK, combinations)
 }
 
 func byCount(c *gin.Context) {
@@ -56,7 +54,6 @@ func byTopCount(c *gin.Context) {
 	// page has 100 records
 	page, err := strconv.Atoi(c.Param("page"))
 	if err != nil || page < 0 {
-		fmt.Println(page)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"err": "Bad argument"})
 		return
 	}
@@ -130,7 +127,7 @@ func main() {
 	r.LoadHTMLGlob("static/*.html")
 	r.GET("/", home)
 	r.GET("/ws", serveWs(broadcastCommChan))
-	r.GET("/history/last/:last", historyLast)
+	r.GET("/history/page/:page", historyByPage)
 	r.GET("/count/:count", byCount)
 	r.GET("/top/count/:page", byTopCount)
 	r.GET("/date/:year", byDate)

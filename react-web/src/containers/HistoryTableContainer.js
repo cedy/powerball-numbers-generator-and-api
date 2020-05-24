@@ -1,5 +1,6 @@
 import React from 'react';
 import HistoryRow from '../components/HistoryRow';
+import PPagination from '../components/Pagination';
 import Table from 'react-bootstrap/Table';
 
 const API_ADDRESS = "http://localhost:8080"
@@ -7,14 +8,22 @@ const API_ADDRESS = "http://localhost:8080"
 class HistoryTableContainer extends React.Component {
     constructor(props) {
         super(props);
-
+        this.onClickFirstPage = this.onClickFirstPage.bind(this);
+        this.onClickLastPage = this.onClickLastPage.bind(this);
+        this.onClickNextPage = this.onClickNextPage.bind(this);
+        this.onClickPreviousPage = this.onClickPreviousPage.bind(this);
         this.state = {
             rows: {},
+            currentPage: 1,
         }
     }
-
+    
     componentDidMount() {
-        fetch(API_ADDRESS + "/history/last/25")
+        this.loadPageData(this.state.currentPage);
+    }
+
+    loadPageData(pageNumber) {
+        fetch(API_ADDRESS + "/history/page/" + pageNumber)
             .then(res => res.json())
             .then(
                 (result) => {
@@ -50,6 +59,33 @@ class HistoryTableContainer extends React.Component {
             });
     }
 
+    onClickFirstPage(event) {
+        if (this.state.currentPage === 1) {
+            return
+        }
+        this.setState({currentPage: 1});
+        this.loadPageData(1);
+    }
+
+    onClickLastPage(event) {
+        console.log("last");
+    }
+
+    onClickNextPage(event) {
+        let currentPage = this.state.currentPage + 1 ;
+        this.setState({currentPage: currentPage});
+        this.loadPageData(currentPage);
+    }
+
+    onClickPreviousPage(event) {
+        if (this.state.currentPage === 1) {
+            return
+        }
+        let currentPage = this.state.currentPage - 1 ;
+        this.setState({currentPage: currentPage});
+        this.loadPageData(currentPage);
+    }
+
     render() {
         const RGNC = <abbr title="Randomly Generated Numbers Count">RGNC</abbr>;
         let tableRows = []; 
@@ -80,6 +116,15 @@ class HistoryTableContainer extends React.Component {
                 </tbody>
 
             </Table>
+            <div className="d-flex justify-content-center">
+                <PPagination
+                    currentPage={this.state.currentPage}
+                    first={this.onClickFirstPage}
+                    last={this.onClickLastPage}
+                    previous={this.onClickPreviousPage}
+                    next={this.onClickNextPage}
+                />
+            </div>
         </div>
         )
     }
