@@ -11,7 +11,6 @@ class PPagination extends React.Component {
           <Pagination.Prev onClick={this.props.previous}/>
           <Pagination.Item active>{this.props.currentPage}</Pagination.Item>
           <Pagination.Next onClick={this.props.next}/>
-          <Pagination.Last onClick={this.props.last}/>
         </Pagination>)
     }
 }

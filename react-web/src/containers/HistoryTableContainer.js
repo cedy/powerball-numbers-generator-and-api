@@ -9,7 +9,6 @@ class HistoryTableContainer extends React.Component {
     constructor(props) {
         super(props);
         this.onClickFirstPage = this.onClickFirstPage.bind(this);
-        this.onClickLastPage = this.onClickLastPage.bind(this);
         this.onClickNextPage = this.onClickNextPage.bind(this);
         this.onClickPreviousPage = this.onClickPreviousPage.bind(this);
         this.state = {
@@ -67,11 +66,10 @@ class HistoryTableContainer extends React.Component {
         this.loadPageData(1);
     }
 
-    onClickLastPage(event) {
-        console.log("last");
-    }
-
     onClickNextPage(event) {
+        if (Object.keys(this.state.rows).length < 100) {
+            return
+        }
         let currentPage = this.state.currentPage + 1 ;
         this.setState({currentPage: currentPage});
         this.loadPageData(currentPage);
@@ -91,7 +89,6 @@ class HistoryTableContainer extends React.Component {
         let tableRows = []; 
         if (Object.keys(this.state.rows).length){
         Object.keys(this.state.rows).forEach((key) => {
-        console.log(this.state.rows[key]);
             tableRows.push(
                 <HistoryRow key={key} date={this.state.rows[key].date} numbers={key} dayCount={this.state.rows[key].rCount['day']} weekCount={this.state.rows[key].rCount.week} monthCount={this.state.rows[key].rCount.month} yearCount={this.state.rows[key].rCount.year} allTime={this.state.rows[key].rCount.allTime}/>
         );
@@ -120,7 +117,6 @@ class HistoryTableContainer extends React.Component {
                 <PPagination
                     currentPage={this.state.currentPage}
                     first={this.onClickFirstPage}
-                    last={this.onClickLastPage}
                     previous={this.onClickPreviousPage}
                     next={this.onClickNextPage}
                 />
