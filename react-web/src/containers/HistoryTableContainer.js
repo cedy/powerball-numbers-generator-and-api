@@ -21,12 +21,18 @@ class HistoryTableContainer extends React.Component {
         this.loadPageData(this.state.currentPage);
     }
 
+    errorHadnler(error) {
+                    alert("Something went wrong, please refresh the page");
+                    console.log(error);
+    }
+    
     loadPageData(pageNumber) {
         fetch(API_ADDRESS + "/history/page/" + pageNumber)
-            .then(res => res.json())
+            .then((res) => res.json())
             .then(
                 (result) => {
                     let rows = {};
+                    console.log(result);
                     result.forEach((element) => {
                         rows[element.numbers] = {
                             date: element.date, 
@@ -35,12 +41,7 @@ class HistoryTableContainer extends React.Component {
                     });
                     this.setState({rows: rows});
                     return rows;
-                },
-                (error) => {
-                    alert("Something went wrong, please refresh the page");
-                    console.log(error);
-                }
-            )
+                })
             .then((rows) => {
                 Object.keys(rows).forEach((key) => {
                     fetch(API_ADDRESS + "/numbers/" + key.split(" ").join("/"))
@@ -55,7 +56,8 @@ class HistoryTableContainer extends React.Component {
                                 }
                             });
                             });
-            });
+            })
+            .catch(this.errorHadnler);
     }
 
     onClickFirstPage(event) {

@@ -8,7 +8,7 @@ body {
 
 
 .menu-text {
-    font-family:i "Segoe UI", Arial, sans-serif;
+    font-family: "Roboto", Arial, sans-serif;
     text-transform: uppercase;
     letter-spacing: 0.2em;
     font-weight: 800;
@@ -31,9 +31,17 @@ body {
         margin: 2% 0;
     }
 }
+
+.letterBox {
+    background: #696969;
+    color: #fff;
+    padding: 0.12em 0.32em 0.06em 0.32em;
+}
+
 .numbers {
   display: inline-block;
   vertical-align: top;
+  line-height: 1.3;
   margin: 7px;
   background-color: transparent;
   height: 25px;
@@ -41,7 +49,7 @@ body {
   perspective: 1000px;
   box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
   transition: all 400ms ease-in-out;
-  animation: eMLfYp 600ms linear;
+  animation: eMLfYp 400ms linear;
 }
 
 .flip-card-inner {
@@ -49,7 +57,7 @@ body {
   width: 100%;
   height: 100%;
   text-align: center;
-  transition: transform 1s;
+  transition: transform 0.8s;
   transform-style: preserve-3d;
   color: #333;
   text-align: center;

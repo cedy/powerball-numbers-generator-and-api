@@ -24,17 +24,17 @@
 
 - [x] create pagination component
 
-- [*] integrate pagination into history page
+- [x] integrate pagination into history page
 
-- [*] add api to get history numbers by page
+- [x] add api to get history numbers by page
 
-- [] integrate pagination with top generated numbers page
+- [x] integrate pagination with top generated numbers page
 
-- [] highlight PB number everywhere
+- [x] highlight PB number everywhere
 
 - [] add search page ?
 
-- [] prepare for deployment 
+- [*] prepare for deployment 
 
 - [] create docker container
 
@@ -42,7 +42,7 @@
 
 - [] gather settings/credentials in one file (db, mail, etc)
 
-- [] add ssl support 
+- [*] add ssl support 
 
 - [] add feedback form
 

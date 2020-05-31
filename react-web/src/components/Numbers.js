@@ -26,11 +26,12 @@ componentDidUpdate(prevProps) {
 componentWillUnmount() {
     clearInterval(this.timerID);
   }
-    render() {
+render() {
+    let nA = this.props.numbers.split(" ");
         return (
             <div className={`numbers ${this.state.animate ? "shake-animation count-text-static" : ""}`}>
                 <div className="flip-card-inner">
-                <div className="numbers-front">{this.props.numbers}</div>
+                    <div className="numbers-front">{nA[0]} {nA[1]} {nA[2]} {nA[3]} {nA[4]} <span className="letterBox">{nA[5]}</span></div>
                 <div className="count-back">{this.props.count}</div>
                 </div>
             </div>
