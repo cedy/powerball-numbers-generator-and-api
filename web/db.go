@@ -119,15 +119,24 @@ func setupConnection() *sql.DB {
 	return db
 }
 
+//in case of transaction error in resetCount, kick off new resetCounts in goroutine and panics with original error
 func handleTransactionError(err error, db *sql.DB, tx *sql.Tx) {
 	if err != nil {
 		tx.Rollback()
 		fmt.Println(err.Error())
 		time.Sleep(10 * time.Second)
 		go resetCounts(db)
+		panic(err)
 	}
 }
+
 func resetCounts(db *sql.DB) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("ResetCount failed, ", r)
+		}
+	}()
+
 	recentlyReset := false
 	for {
 		currentTime := time.Now()
@@ -137,7 +146,7 @@ func resetCounts(db *sql.DB) {
 			query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN dayCount;")
 			_, err = tx.Exec(query)
 			handleTransactionError(err, db, tx)
-			query = fmt.Sprintf("ALTER TABLE tale CREATE COLUMN dayCount INT UNSIGNED DEFAULT 0 AFTER count;")
+			query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN dayCount INT UNSIGNED DEFAULT 0 AFTER count;")
 			_, err = tx.Exec(query)
 			handleTransactionError(err, db, tx)
 			if currentTime.Weekday() == time.Monday {
@@ -146,7 +155,7 @@ func resetCounts(db *sql.DB) {
 				query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN weekCount;")
 				_, err = tx.Exec(query)
 				handleTransactionError(err, db, tx)
-				query = fmt.Sprintf("ALTER TABLE tale CREATE COLUMN weekCount INT UNSIGNED DEFAULT 0 AFTER dayCount;")
+				query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN weekCount INT UNSIGNED DEFAULT 0 AFTER dayCount;")
 				_, err = tx.Exec(query)
 				handleTransactionError(err, db, tx)
 			}
@@ -156,7 +165,7 @@ func resetCounts(db *sql.DB) {
 				query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN monthCount;")
 				_, err = tx.Exec(query)
 				handleTransactionError(err, db, tx)
-				query = fmt.Sprintf("ALTER TABLE tale CREATE COLUMN monthCount INT UNSIGNED DEFAULT 0 AFTER weekCount;")
+				query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN monthCount INT UNSIGNED DEFAULT 0 AFTER weekCount;")
 				_, err = tx.Exec(query)
 
 				if currentTime.Month() == time.January {
@@ -165,14 +174,13 @@ func resetCounts(db *sql.DB) {
 					query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN yearCount;")
 					_, err = tx.Exec(query)
 					handleTransactionError(err, db, tx)
-					query = fmt.Sprintf("ALTER TABLE tale CREATE COLUMN yearCount INT UNSIGNED DEFAULT 0 AFTER monthCount;")
+					query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN yearCount INT UNSIGNED DEFAULT 0 AFTER monthCount;")
 					_, err = tx.Exec(query)
 				}
 			}
 			err = tx.Commit()
 			if err != nil {
 				go resetCounts(db)
-				return
 			}
 			recentlyReset = true
 		}
