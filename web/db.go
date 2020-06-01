@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"sort"
 	"strconv"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type combinationsData struct {
@@ -75,16 +76,16 @@ func (d *date) DateString() (string, error) {
 	year, err := strconv.Atoi(d.Year)
 	// year should be 4 digits and within a range 1970-current year
 	if err != nil || len(d.Year) != 4 || year > time.Now().UTC().Year() || year < 1970 {
-		return "", errors.New("Year is incorrect, please use for digit and be within current and 1970.")
+		return "", errors.New("year is incorrect, please use for digit and be within current and 1970")
 	}
 	date = d.Year
 	// month should be 2 digits and within a range 1-12
 	if d.Month != "" || len(d.Month) == 2 {
 		month, err := strconv.Atoi(d.Month)
 		if err != nil {
-			return "", errors.New("Month is incorrect, please provide month as 2 digit.")
+			return "", errors.New("month is incorrect, please provide month as 2 digit")
 		} else if month < 1 || month > 12 {
-			return "", errors.New("Month should be within 01-12 range.")
+			return "", errors.New("month should be within 01-12 range")
 		} else {
 			date = date + "-" + d.Month
 		}
@@ -95,9 +96,9 @@ func (d *date) DateString() (string, error) {
 	if d.Day != "" || len(d.Day) == 2 {
 		day, err := strconv.Atoi(d.Day)
 		if err != nil {
-			return "", errors.New("Day is incorrent, please provide day as 2 digits.")
+			return "", errors.New("day is incorrent, please provide day as 2 digits")
 		} else if day < 1 || day > 31 {
-			return "", errors.New("Day should be within 01-31 range.")
+			return "", errors.New("day should be within 01-31 range")
 		} else {
 			date = date + "-" + d.Day
 			return date, nil

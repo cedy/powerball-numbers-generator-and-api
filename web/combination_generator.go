@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func GenerateCombinations(numbersChan chan<- []int, broadcastChan chan<- []int, stop <-chan int) {
+func generateCombinations(numbersChan chan<- []int, broadcastChan chan<- []int, stop <-chan int) {
 	var balls [69]int
 	numbers := make([]int, 6)
 	select {
@@ -43,7 +43,7 @@ func GenerateCombinations(numbersChan chan<- []int, broadcastChan chan<- []int, 
 	}
 }
 
-func WriteCombinationsToDB(db *sql.DB, numbersChan chan []int) {
+func writeCombinationsToDB(db *sql.DB, numbersChan chan []int) {
 	for {
 		numbers := <-numbersChan
 		if len(numbers) == 0 {
@@ -70,7 +70,7 @@ func WriteCombinationsToDB(db *sql.DB, numbersChan chan []int) {
 	}
 }
 
-func BroadcastCombinations(numbersChan <-chan []int, commChan <-chan chan string) {
+func broadcastCombinations(numbersChan <-chan []int, commChan <-chan chan string) {
 	subscribersList := make([]chan string, 0, 100)
 	for {
 		select {
