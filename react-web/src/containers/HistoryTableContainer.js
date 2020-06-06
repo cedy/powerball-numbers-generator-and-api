@@ -3,7 +3,7 @@ import HistoryRow from '../components/HistoryRow';
 import PPagination from '../components/Pagination';
 import Table from 'react-bootstrap/Table';
 
-const API_ADDRESS = "http://localhost:8080"
+const API_ADDRESS = "https://localhost:8080"
 
 class HistoryTableContainer extends React.Component {
     constructor(props) {

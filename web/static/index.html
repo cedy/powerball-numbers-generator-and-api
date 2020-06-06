@@ -8,7 +8,7 @@
         <script type="text/javascript">
             window.onload = function () {
                 var data = document.getElementById("message");
-                var conn = new WebSocket("ws://localhost:8080/ws");
+                var conn = new WebSocket("wss://localhost:8080/ws");
                 conn.onclose = function(evt) {
                     data.textContent = 'Connection closed';
                 }

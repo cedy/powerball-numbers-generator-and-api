@@ -48,4 +48,4 @@
 
 - [] create tests for backend api {5} 
 
-- [] make generator's seed dynamic. {0.4}
+- [*] make generator's seed dynamic. {0.4}

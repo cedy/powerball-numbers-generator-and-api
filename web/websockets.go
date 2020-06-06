@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"net/http"
-	"strings"
-	"time"
 )
 
 const (
@@ -76,12 +76,7 @@ func serveWs(broadcastCommChan chan chan string) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 
 		upgrader.CheckOrigin = func(r *http.Request) bool {
-			// Allow only local connections
-			ip := strings.Split(r.RemoteAddr, ":")[0]
-			if ip == "127.0.0.1" || ip == "localhost" {
-				return true
-			}
-			return false
+			return true
 		}
 		ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {

@@ -135,5 +135,5 @@ func main() {
 	r.GET("/date/:year/:month", byDate)
 	r.GET("/date/:year/:month/:day", byDate)
 	r.GET("/numbers/:Digit1/:Digit2/:Digit3/:Digit4/:Digit5/:Pb", byHash)
-	r.RunTLS("127.0.0.1:8080", "localhost.crt", "localhost.key")
+	r.RunTLS(":8080", "localhost.crt", "localhost.key")
 }
