@@ -32,15 +32,19 @@
 
 - [x] highlight PB number everywhere
 
+- [x] Log to files
+
+- [*] Omit static requests in request.log
+
 - [] add search page ?
 
-- [*] prepare for deployment 
+- [x] prepare for deployment 
 
-- [] create docker container
+- [o] create docker container
 
-- [] setup nginx to route the trafic/handle ssl ?
+- [o] setup nginx to route the trafic/handle ssl ?
 
-- [] gather settings/credentials in one file (db, mail, etc)
+- [x] gather settings/credentials in one file (db, mail, etc)
 
 - [x] add ssl support 
 

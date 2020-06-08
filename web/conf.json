@@ -1,0 +1,12 @@
+{
+    "ServerCert": "localhost.crt",
+    "ServerCertKey": "localhost.key",
+    "DBuser": "testuser",
+    "DBpassword": "password",
+    "Dbhost": "127.0.0.1",
+    "DBname": "mpl",
+    "DBport": "33061",
+    "HTTPSport": "2222", 
+    "MaxCPUs": 3,
+    "RandomGeneratorsWorkers": 1
+}

@@ -3,7 +3,7 @@ import HistoryRow from '../components/HistoryRow';
 import PPagination from '../components/Pagination';
 import Table from 'react-bootstrap/Table';
 
-const API_ADDRESS = "https://localhost:8080"
+const API_ADDRESS = "http://127.0.0.1:8080"
 
 class HistoryTableContainer extends React.Component {
     constructor(props) {
@@ -32,7 +32,6 @@ class HistoryTableContainer extends React.Component {
             .then(
                 (result) => {
                     let rows = {};
-                    console.log(result);
                     result.forEach((element) => {
                         rows[element.numbers] = {
                             date: element.date, 

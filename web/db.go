@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"time"
@@ -108,23 +109,30 @@ func (d *date) DateString() (string, error) {
 	}
 }
 
-func setupConnection() *sql.DB {
-	db, err := sql.Open("mysql", "testuser:password@tcp(127.0.0.1:33061)/mpl?parseTime=true")
-	db.SetMaxOpenConns(100)
-	if err != nil {
-		panic(err.Error())
-	}
+func setupConnection(user string, password string, host string, port string, dbName string) *sql.DB {
+	connectionParms := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", user, password, host, port, dbName)
+	db, err := sql.Open("mysql", connectionParms)
+	printAndExitIfError(err)
+	db.SetMaxOpenConns(25)
 	setAC, err := db.Query("SET autocommit = 1;")
+	printAndExitIfError(err)
 	setAC.Close()
 
 	return db
+}
+
+func printAndExitIfError(err error) {
+	if err != nil {
+		apiLogger.Println(err.Error())
+		os.Exit(1)
+	}
 }
 
 //in case of transaction error in resetCount, kick off new resetCounts in goroutine and panics with original error
 func handleTransactionError(err error, db *sql.DB, tx *sql.Tx) {
 	if err != nil {
 		tx.Rollback()
-		fmt.Println(err.Error())
+		apiLogger.Println(err.Error())
 		time.Sleep(10 * time.Second)
 		go resetCounts(db)
 		panic(err)
@@ -134,7 +142,7 @@ func handleTransactionError(err error, db *sql.DB, tx *sql.Tx) {
 func resetCounts(db *sql.DB) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("ResetCount failed, ", r)
+			apiLogger.Println("ResetCount failed, ", r)
 		}
 	}()
 

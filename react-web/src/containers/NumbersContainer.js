@@ -3,8 +3,8 @@ import Numbers from '../components/Numbers';
 import { w3cwebsocket as W3CWebSocket } from "websocket";
 import PPagination from '../components/Pagination';
 
-const client = new W3CWebSocket('wss://localhost:8080/ws');
-const API_ENDPOINT = "https://localhost:8080/top/count/";
+const client = new W3CWebSocket('ws://127.0.0.1:8080/ws');
+const API_ENDPOINT = "http://127.0.0.1:8080/top/count/";
 
 
 class NumbersContainer extends React.Component {

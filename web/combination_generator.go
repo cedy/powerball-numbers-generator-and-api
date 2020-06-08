@@ -61,7 +61,7 @@ func writeCombinationsToDB(db *sql.DB, numbersChan chan []int) {
 			numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5])
 		insert, err := db.Query(query)
 		if err != nil {
-			fmt.Println(err.Error())
+			apiLogger.Println(err.Error())
 			numbersChan <- numbers
 			time.Sleep(5 * time.Second)
 			continue
@@ -84,9 +84,8 @@ func broadcastCombinations(numbersChan <-chan []int, commChan <-chan chan string
 			// iterate over subscribers list, if chan is in the list, remove it, otherwise add it to the list
 			isDeleted := false
 			for index, ch := range subscribersList {
-				fmt.Println(channel, ch)
+				apiLogger.Println(channel, ch)
 				if channel == ch {
-					fmt.Println("chan removed")
 					subscribersList = append(subscribersList[0:index], subscribersList[index+1:len(subscribersList)]...)
 					isDeleted = true
 				}
@@ -94,7 +93,6 @@ func broadcastCombinations(numbersChan <-chan []int, commChan <-chan chan string
 			if !isDeleted {
 				isDeleted = false
 				subscribersList = append(subscribersList, channel)
-				fmt.Println("chan added")
 			}
 		}
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -59,7 +58,7 @@ func writer(ws *websocket.Conn, commBroadcastChan chan chan string) {
 			if msg != nil {
 				ws.SetWriteDeadline(time.Now().Add(writeWait))
 				if err := ws.WriteMessage(websocket.TextMessage, msg); err != nil {
-					fmt.Println(err.Error())
+					apiLogger.Println(err.Error())
 					return
 				}
 			}
@@ -81,7 +80,7 @@ func serveWs(broadcastCommChan chan chan string) gin.HandlerFunc {
 		ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
 			if _, ok := err.(websocket.HandshakeError); !ok {
-				fmt.Println(err.Error())
+				apiLogger.Println(err.Error())
 			}
 			return
 		}

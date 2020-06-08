@@ -2,19 +2,36 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"os"
+	"runtime"
 	"strconv"
-	"strings"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 )
 
 var db *sql.DB
+var configPath = flag.String("conf", "./conf.json", "Path to the configuration file")
+var conf *Configuration
+var apiLogger *log.Logger
 
-func home(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.html", nil)
+func init() {
+	f, err := os.OpenFile("ApiServer.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	defer f.Close()
+	apiLogger = log.New(f, "", log.LstdFlags)
+	apiLogger.Println("Logger initialized")
 }
 
 func historyByPage(c *gin.Context) {
@@ -27,7 +44,7 @@ func historyByPage(c *gin.Context) {
 	condition := fmt.Sprintf("ORDER BY time DESC LIMIT %d, 100", page*100)
 	combinations, err := getNumbersHistory(condition, db)
 	if err != nil {
-		fmt.Println(err.Error())
+		apiLogger.Println(err.Error())
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "DB err. "})
 		return
 	}
@@ -37,14 +54,14 @@ func historyByPage(c *gin.Context) {
 func byCount(c *gin.Context) {
 	count, err := strconv.Atoi(c.Param("count"))
 	if err != nil {
-		fmt.Println(count)
+		apiLogger.Println(count)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"err": "Bad argument"})
 		return
 	}
 	condition := fmt.Sprintf("WHERE count = %d", count)
 	combinations, err := getNumbers(condition, db)
 	if err != nil {
-		fmt.Println(err.Error())
+		apiLogger.Println(err.Error())
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "DB err. "})
 		return
 	}
@@ -62,7 +79,7 @@ func byTopCount(c *gin.Context) {
 	condition := fmt.Sprintf("ORDER by count DESC LIMIT %d, 100;", page*100)
 	combinations, err := getNumbers(condition, db)
 	if err != nil {
-		fmt.Println(err.Error())
+		apiLogger.Println(err.Error())
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"err": "DB err. "})
 		return
 	}
@@ -80,6 +97,7 @@ func byDate(c *gin.Context) {
 	condition := fmt.Sprintf("WHERE time LIKE '%s%%'", dateString)
 	combinations, err := getNumbers(condition, db)
 	if err != nil {
+		apiLogger.Println(err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -91,12 +109,14 @@ func byHash(c *gin.Context) {
 	c.BindUri(&numbers)
 	hash, err := numbers.getHash()
 	if err != nil {
+		apiLogger.Println(err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	condition := fmt.Sprintf("WHERE hash = %s", hash)
 	combinations, err := getNumbers(condition, db)
 	if err != nil {
+		apiLogger.Println(err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -104,36 +124,58 @@ func byHash(c *gin.Context) {
 }
 
 func main() {
-	r := gin.Default()
-	config := cors.DefaultConfig()
-	config.AllowOriginFunc =
-		func(r string) bool {
-			// Allow only local connections
-			ip := strings.Split(r[7:], ":")[0]
-			if ip == "127.0.0.1" || ip == "localhost" {
-				return true
-			}
-			return false
-		}
-	r.Use(cors.New(config))
-	db = setupConnection()
+	flag.Parse()
+	conf = getConfiguration(*configPath)
+	runtime.GOMAXPROCS(conf.MaxCPUs)
+	db = setupConnection(conf.DBuser, conf.DBpassword, conf.DBhost, conf.DBport, conf.DBname)
 	numbersChan := make(chan []int, 100)
 	stopChan := make(chan int)
 	broadcastChan := make(chan []int, 100)
 	broadcastCommChan := make(chan chan string, 100)
 	go resetCounts(db)
-	go generateCombinations(numbersChan, broadcastChan, stopChan)
-	go writeCombinationsToDB(db, numbersChan)
+	for i := 0; i < conf.RandomGeneratorsWorkers; i++ {
+		go generateCombinations(numbersChan, broadcastChan, stopChan)
+		go writeCombinationsToDB(db, numbersChan)
+		go writeCombinationsToDB(db, numbersChan)
+	}
 	go broadcastCombinations(broadcastChan, broadcastCommChan)
-	r.LoadHTMLGlob("static/*.html")
-	r.GET("/", home)
-	r.GET("/ws", serveWs(broadcastCommChan))
-	r.GET("/history/page/:page", historyByPage)
-	r.GET("/count/:count", byCount)
-	r.GET("/top/count/:page", byTopCount)
-	r.GET("/date/:year", byDate)
-	r.GET("/date/:year/:month", byDate)
-	r.GET("/date/:year/:month/:day", byDate)
-	r.GET("/numbers/:Digit1/:Digit2/:Digit3/:Digit4/:Digit5/:Pb", byHash)
-	r.RunTLS(":8080", "localhost.crt", "localhost.key")
+	router := mux.NewRouter()
+	requestlogfile, _ := os.OpenFile("requests.log", os.O_CREATE|os.O_APPEND, 0644)
+	loggedRouter := handlers.LoggingHandler(requestlogfile, router)
+	gin.DisableConsoleColor()
+	errlogfile, _ := os.OpenFile("error.log", os.O_CREATE|os.O_APPEND, 0644)
+	accesslogfile, _ := os.OpenFile("access.log", os.O_CREATE|os.O_APPEND, 0644)
+	gin.DefaultWriter = io.MultiWriter(accesslogfile)
+	gin.DefaultErrorWriter = io.MultiWriter(errlogfile)
+	api := gin.Default()
+	config := cors.DefaultConfig()
+	config.AllowOriginFunc =
+		func(r string) bool {
+			return true
+		}
+	api.Use(cors.New(config))
+	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
+	router.PathPrefix("/").Handler(spa)
+	api.GET("/ws", serveWs(broadcastCommChan))
+	api.GET("/history/page/:page", historyByPage)
+	api.GET("/count/:count", byCount)
+	api.GET("/top/count/:page", byTopCount)
+	api.GET("/date/:year", byDate)
+	api.GET("/date/:year/:month", byDate)
+	api.GET("/date/:year/:month/:day", byDate)
+	api.GET("/numbers/:Digit1/:Digit2/:Digit3/:Digit4/:Digit5/:Pb", byHash)
+	apiSrv := &http.Server{
+		Handler:      api,
+		Addr:         "127.0.0.1:8080",
+		WriteTimeout: 14 * time.Second,
+		ReadTimeout:  14 * time.Second,
+	}
+	frontEndSrv := &http.Server{
+		Handler:      loggedRouter,
+		Addr:         fmt.Sprintf(":%s", conf.HTTPSport),
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+	go apiSrv.ListenAndServe()
+	apiLogger.Fatal(frontEndSrv.ListenAndServeTLS(conf.ServerCert, conf.ServerCertKey))
 }
