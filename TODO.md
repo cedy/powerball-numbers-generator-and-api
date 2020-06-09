@@ -34,7 +34,11 @@
 
 - [x] Log to files
 
-- [*] Omit static requests in request.log
+- [x] Omit static requests in request.log
+
+- [*] Add setting for the logs location and debug/prod variable for gin
+
+- [*] Deploy the application
 
 - [] add search page ?
 

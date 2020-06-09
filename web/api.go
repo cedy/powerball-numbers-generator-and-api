@@ -14,7 +14,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -22,6 +21,7 @@ var db *sql.DB
 var configPath = flag.String("conf", "./conf.json", "Path to the configuration file")
 var conf *Configuration
 var apiLogger *log.Logger
+var webLogger *log.Logger
 
 func init() {
 	f, err := os.OpenFile("ApiServer.log",
@@ -29,9 +29,18 @@ func init() {
 	if err != nil {
 		log.Println(err)
 	}
-	defer f.Close()
 	apiLogger = log.New(f, "", log.LstdFlags)
 	apiLogger.Println("Logger initialized")
+}
+
+func init() {
+	f, err := os.OpenFile("WebServer.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	webLogger = log.New(f, "", log.LstdFlags)
+	webLogger.Println("Logger initialized")
 }
 
 func historyByPage(c *gin.Context) {
@@ -140,8 +149,8 @@ func main() {
 	}
 	go broadcastCombinations(broadcastChan, broadcastCommChan)
 	router := mux.NewRouter()
-	requestlogfile, _ := os.OpenFile("requests.log", os.O_CREATE|os.O_APPEND, 0644)
-	loggedRouter := handlers.LoggingHandler(requestlogfile, router)
+	webLoggerWrapper := loggingMiddleware(webLogger)
+	loggedRouter := webLoggerWrapper(router)
 	gin.DisableConsoleColor()
 	errlogfile, _ := os.OpenFile("error.log", os.O_CREATE|os.O_APPEND, 0644)
 	accesslogfile, _ := os.OpenFile("access.log", os.O_CREATE|os.O_APPEND, 0644)

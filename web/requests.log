@@ -1,5 +1,0 @@
-::1 - - [07/Jun/2020:22:37:34 -0400] "GET /about HTTP/2.0" 200 2555
-::1 - - [07/Jun/2020:22:37:34 -0400] "GET /static/css/main.c43c56f2.chunk.css HTTP/2.0" 200 3653
-::1 - - [07/Jun/2020:22:37:34 -0400] "GET /static/css/main.c43c56f2.chunk.css.map HTTP/2.0" 200 4889
-::1 - - [07/Jun/2020:22:37:34 -0400] "GET /static/js/2.99740ec1.chunk.js.map HTTP/2.0" 200 567546
-::1 - - [07/Jun/2020:22:37:34 -0400] "GET /static/js/main.561a7112.chunk.js.map HTTP/2.0" 200 28512

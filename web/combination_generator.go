@@ -84,7 +84,6 @@ func broadcastCombinations(numbersChan <-chan []int, commChan <-chan chan string
 			// iterate over subscribers list, if chan is in the list, remove it, otherwise add it to the list
 			isDeleted := false
 			for index, ch := range subscribersList {
-				apiLogger.Println(channel, ch)
 				if channel == ch {
 					subscribersList = append(subscribersList[0:index], subscribersList[index+1:len(subscribersList)]...)
 					isDeleted = true
