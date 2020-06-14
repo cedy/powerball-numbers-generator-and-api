@@ -1,4 +1,5 @@
 {
+    "Production" : false,
     "ServerCert": "localhost.crt",
     "ServerCertKey": "localhost.key",
     "DBuser": "testuser",
@@ -8,5 +9,8 @@
     "DBport": "33061",
     "HTTPSport": "2222", 
     "MaxCPUs": 3,
-    "RandomGeneratorsWorkers": 1
+    "RandomGeneratorsWorkers": 1,
+    "ApiServerLogPath": "ApiServer.log",
+    "WebServerLogPath": "WebServer.log",
+    "WebServerAccessLogPath": "access.log"
 }

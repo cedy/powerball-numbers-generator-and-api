@@ -8,18 +8,19 @@ import (
 	"time"
 )
 
-func generateCombinations(numbersChan chan<- []int, broadcastChan chan<- []int, stop <-chan int) {
+func generateCombinations(numbersChan chan<- []int, broadcastChan chan<- []int) {
 	var balls [69]int
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
+	ticker := time.Tick(100 * time.Second)
 	numbers := make([]int, 6)
-	select {
-	case _ = <-stop:
-		return
-	default:
-		for {
+	for {
+		select {
+		case <-ticker:
+			random = rand.New(rand.NewSource(time.Now().UnixNano()))
+		default:
 			for i := 0; i < 69; i++ {
 				balls[i] = int(i + 1)
 			}
-			random := rand.New(rand.NewSource(time.Now().UnixNano() + 22))
 			for i := 0; i < 5; i++ {
 				isBallAvailable := false
 				for isBallAvailable != true {
@@ -38,7 +39,7 @@ func generateCombinations(numbersChan chan<- []int, broadcastChan chan<- []int, 
 			numbers[5] = int(random.Int31n(26)) + 1
 			numbersChan <- numbers
 			broadcastChan <- numbers
-			time.Sleep(time.Millisecond * 500)
+			//	time.Sleep(time.Millisecond * 500)
 		}
 	}
 }

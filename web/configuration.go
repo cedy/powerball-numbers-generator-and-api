@@ -8,6 +8,7 @@ import (
 
 // Configuration holds variables required for application's initialization
 type Configuration struct {
+	Production              bool
 	ServerCert              string
 	ServerCertKey           string
 	DBuser                  string
@@ -18,6 +19,9 @@ type Configuration struct {
 	HTTPSport               string
 	MaxCPUs                 int
 	RandomGeneratorsWorkers int
+	APIServerLogPath        string
+	WebServerLogPath        string
+	WebServerAccessLogPath  string
 }
 
 func getConfiguration(configurationFilePath string) *Configuration {

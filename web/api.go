@@ -23,24 +23,39 @@ var conf *Configuration
 var apiLogger *log.Logger
 var webLogger *log.Logger
 
-func init() {
-	f, err := os.OpenFile("ApiServer.log",
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Println(err)
+func handlePrintError(e error) {
+	if e != nil {
+		log.Println(e.Error())
 	}
-	apiLogger = log.New(f, "", log.LstdFlags)
-	apiLogger.Println("Logger initialized")
 }
 
 func init() {
-	f, err := os.OpenFile("WebServer.log",
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Println(err)
+	var apiLogFD, webLogFD, accesslogFD *os.File
+	flag.Parse()
+	conf = getConfiguration(*configPath)
+	apiLogFD = os.Stdout
+	webLogFD = os.Stdout
+	accesslogFD = os.Stdout
+	if conf.Production {
+		var err error
+		apiLogFD, err = os.OpenFile(conf.APIServerLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		handlePrintError(err)
+		gin.DisableConsoleColor()
+		accesslogFD, err = os.OpenFile(conf.WebServerAccessLogPath, os.O_CREATE|os.O_APPEND, 0644)
+		handlePrintError(err)
+		webLogFD, err = os.OpenFile(conf.WebServerLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		handlePrintError(err)
+		gin.SetMode(gin.ReleaseMode)
 	}
-	webLogger = log.New(f, "", log.LstdFlags)
-	webLogger.Println("Logger initialized")
+
+	apiLogger = log.New(apiLogFD, "", log.LstdFlags)
+	apiLogger.Println("Logger initialized ", time.Now())
+
+	webLogger = log.New(webLogFD, "", log.LstdFlags)
+	webLogger.Println("Logger initialized ", time.Now())
+
+	gin.DefaultWriter = io.MultiWriter(accesslogFD)
+	gin.DefaultErrorWriter = io.MultiWriter(webLogger.Writer())
 }
 
 func historyByPage(c *gin.Context) {
@@ -133,17 +148,14 @@ func byHash(c *gin.Context) {
 }
 
 func main() {
-	flag.Parse()
-	conf = getConfiguration(*configPath)
 	runtime.GOMAXPROCS(conf.MaxCPUs)
 	db = setupConnection(conf.DBuser, conf.DBpassword, conf.DBhost, conf.DBport, conf.DBname)
 	numbersChan := make(chan []int, 100)
-	stopChan := make(chan int)
 	broadcastChan := make(chan []int, 100)
 	broadcastCommChan := make(chan chan string, 100)
 	go resetCounts(db)
 	for i := 0; i < conf.RandomGeneratorsWorkers; i++ {
-		go generateCombinations(numbersChan, broadcastChan, stopChan)
+		go generateCombinations(numbersChan, broadcastChan)
 		go writeCombinationsToDB(db, numbersChan)
 		go writeCombinationsToDB(db, numbersChan)
 	}
@@ -151,11 +163,6 @@ func main() {
 	router := mux.NewRouter()
 	webLoggerWrapper := loggingMiddleware(webLogger)
 	loggedRouter := webLoggerWrapper(router)
-	gin.DisableConsoleColor()
-	errlogfile, _ := os.OpenFile("error.log", os.O_CREATE|os.O_APPEND, 0644)
-	accesslogfile, _ := os.OpenFile("access.log", os.O_CREATE|os.O_APPEND, 0644)
-	gin.DefaultWriter = io.MultiWriter(accesslogfile)
-	gin.DefaultErrorWriter = io.MultiWriter(errlogfile)
 	api := gin.Default()
 	config := cors.DefaultConfig()
 	config.AllowOriginFunc =
