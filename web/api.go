@@ -10,6 +10,7 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -29,10 +30,8 @@ func handlePrintError(e error) {
 	}
 }
 
-func init() {
+func setupLoggers() {
 	var apiLogFD, webLogFD, accesslogFD *os.File
-	flag.Parse()
-	conf = getConfiguration(*configPath)
 	apiLogFD = os.Stdout
 	webLogFD = os.Stdout
 	accesslogFD = os.Stdout
@@ -131,7 +130,7 @@ func byDate(c *gin.Context) {
 func byHash(c *gin.Context) {
 	var numbers combinationsData
 	c.BindUri(&numbers)
-	hash, err := numbers.getHash()
+	hash, err := numbers.GetHash()
 	if err != nil {
 		apiLogger.Println(err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -148,12 +147,16 @@ func byHash(c *gin.Context) {
 }
 
 func main() {
+	flag.Parse()
+	conf = getConfiguration(*configPath)
+	setupLoggers()
 	runtime.GOMAXPROCS(conf.MaxCPUs)
 	db = setupConnection(conf.DBuser, conf.DBpassword, conf.DBhost, conf.DBport, conf.DBname)
 	numbersChan := make(chan []int, 100)
 	broadcastChan := make(chan []int, 100)
 	broadcastCommChan := make(chan chan string, 100)
-	go resetCounts(db)
+	exitChan := make(chan bool)
+	go resetCounts(db, appClock{}, exitChan)
 	for i := 0; i < conf.RandomGeneratorsWorkers; i++ {
 		go generateCombinations(numbersChan, broadcastChan)
 		go writeCombinationsToDB(db, numbersChan)
@@ -182,7 +185,7 @@ func main() {
 	api.GET("/numbers/:Digit1/:Digit2/:Digit3/:Digit4/:Digit5/:Pb", byHash)
 	apiSrv := &http.Server{
 		Handler:      api,
-		Addr:         "127.0.0.1:8080",
+		Addr:         ":2222",
 		WriteTimeout: 14 * time.Second,
 		ReadTimeout:  14 * time.Second,
 	}
@@ -192,6 +195,10 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
-	go apiSrv.ListenAndServe()
+	go apiSrv.ListenAndServeTLS(conf.ServerCert, conf.ServerCertKey)
+	go http.ListenAndServe(":80", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqhost := strings.Split(r.Host, ":")[0]
+		http.Redirect(w, r, "https://"+reqhost+r.URL.Path+":"+conf.HTTPSport, http.StatusMovedPermanently)
+	}))
 	apiLogger.Fatal(frontEndSrv.ListenAndServeTLS(conf.ServerCert, conf.ServerCertKey))
 }

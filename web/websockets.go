@@ -80,7 +80,7 @@ func serveWs(broadcastCommChan chan chan string) gin.HandlerFunc {
 		ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
 			if _, ok := err.(websocket.HandshakeError); !ok {
-				apiLogger.Println(err.Error())
+				apiLogger.Println("Websocket error: ", err.Error())
 			}
 			return
 		}

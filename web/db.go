@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
 	"time"
@@ -41,29 +40,26 @@ func (comb *combinationsData) numbersFormatted() *map[string]string {
 	}
 }
 
-func (comb *combinationsData) getHash() (string, error) {
+func (comb *combinationsData) GetHash() (string, error) {
 	numbers := []int{comb.Digit1, comb.Digit2, comb.Digit3, comb.Digit4, comb.Digit5, comb.Pb}
+	sort.Ints(numbers[:5])
 	for i, number := range numbers {
 		if number > 70 || number < 1 {
 			return "", errors.New("Error: Number must be  within 1-69 range")
 		}
 		// Powerball range 1-26
-		if i == 5 && number > 26 {
+		if i == 5 && (number < 1 || number > 26) {
 			return "", errors.New("Error: Powerball number must be within 1-26 range")
 		}
-	}
-	sort.Ints(numbers[:5])
-	hash := fmt.Sprintf("%d%d%d%d%d%d", numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5])
-	return hash, nil
-}
-
-func isDigit(str string) bool {
-	for char := range str {
-		if char < 48 && char > 57 {
-			return false
+		if i < 5 {
+			// check for duplicates
+			if number == numbers[i+1] {
+				return "", errors.New("Error: Powerball combination can cotain only unique numbers")
+			}
 		}
 	}
-	return true
+	hash := fmt.Sprintf("%d%d%d%d%d%d", numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5])
+	return hash, nil
 }
 
 type date struct {
@@ -72,36 +68,77 @@ type date struct {
 	Day   string `uri:"day"`
 }
 
+func isLeapYear(year int) bool {
+	leapFlag := false
+	if year%4 == 0 {
+		if year%100 == 0 {
+			if year%400 == 0 {
+				leapFlag = true
+			} else {
+				leapFlag = false
+			}
+		} else {
+			leapFlag = true
+		}
+	} else {
+		leapFlag = false
+	}
+	return leapFlag
+}
+
 func (d *date) DateString() (string, error) {
 	var date string
+	var month int
+	var monthToDaysLength = []struct {
+		Month string
+		Days  int
+	}{
+		{"January", 31},
+		{"February", 28},
+		{"March", 31},
+		{"April", 30},
+		{"May", 31},
+		{"June", 30},
+		{"July", 31},
+		{"August", 31},
+		{"September", 30},
+		{"October", 31},
+		{"November", 30},
+		{"December", 31},
+	}
+	var currentYear = time.Now().UTC().Year()
+	if isLeapYear(currentYear) {
+		monthToDaysLength[1].Days = 29
+	}
 	year, err := strconv.Atoi(d.Year)
 	// year should be 4 digits and within a range 1970-current year
-	if err != nil || len(d.Year) != 4 || year > time.Now().UTC().Year() || year < 1970 {
+	if err != nil || len(d.Year) != 4 || year > currentYear || year < 1970 {
 		return "", errors.New("year is incorrect, please use for digit and be within current and 1970")
 	}
 	date = d.Year
 	// month should be 2 digits and within a range 1-12
-	if d.Month != "" || len(d.Month) == 2 {
-		month, err := strconv.Atoi(d.Month)
+	if d.Month != "" || len(d.Month) <= 2 {
+		month, err = strconv.Atoi(d.Month)
 		if err != nil {
-			return "", errors.New("month is incorrect, please provide month as 2 digit")
+			return "", errors.New("month is incorrect, please provide month as number in rage 1-12")
 		} else if month < 1 || month > 12 {
-			return "", errors.New("month should be within 01-12 range")
+			return "", errors.New("month should be within 1-12 range")
 		} else {
-			date = date + "-" + d.Month
+			date = fmt.Sprintf("%s-%02d", date, month)
 		}
 	} else {
 		return date, nil
 	}
 	// day should be 2 digits and within a range 1-31
-	if d.Day != "" || len(d.Day) == 2 {
+	if d.Day != "" || len(d.Day) <= 2 {
 		day, err := strconv.Atoi(d.Day)
 		if err != nil {
-			return "", errors.New("day is incorrent, please provide day as 2 digits")
-		} else if day < 1 || day > 31 {
-			return "", errors.New("day should be within 01-31 range")
+			return "", errors.New("day is incorrent, please provide a day as number in range 1-31")
+		} else if day < 1 || day > monthToDaysLength[month-1].Days {
+			// check for leap year
+			return "", fmt.Errorf("day should be within 1-%d range in %s", monthToDaysLength[month-1].Days, monthToDaysLength[month-1].Month)
 		} else {
-			date = date + "-" + d.Day
+			date = fmt.Sprintf("%s-%02d", date, day)
 			return date, nil
 		}
 	} else {
@@ -123,23 +160,38 @@ func setupConnection(user string, password string, host string, port string, dbN
 
 func printAndExitIfError(err error) {
 	if err != nil {
-		apiLogger.Println(err.Error())
-		os.Exit(1)
+		apiLogger.Fatal(err)
 	}
 }
 
 //in case of transaction error in resetCount, kick off new resetCounts in goroutine and panics with original error
-func handleTransactionError(err error, db *sql.DB, tx *sql.Tx) {
+func handleTransactionError(err error, db *sql.DB, tx *sql.Tx, clock clock, exit <-chan bool) {
 	if err != nil {
 		tx.Rollback()
 		apiLogger.Println(err.Error())
-		time.Sleep(10 * time.Second)
-		go resetCounts(db)
+		clock.Sleep(10 * time.Second)
+		go resetCounts(db, clock, exit)
 		panic(err)
 	}
 }
 
-func resetCounts(db *sql.DB) {
+type clock interface {
+	Now() time.Time
+	Sleep(d time.Duration)
+}
+type appClock struct {
+}
+
+func (c appClock) Sleep(d time.Duration) {
+	time.Sleep(d)
+}
+
+func (c appClock) Now() time.Time {
+	return time.Now()
+}
+
+//resets counts daily, weekly, monthly and yearly respectivly
+func resetCounts(db *sql.DB, clock clock, exit <-chan bool) {
 	defer func() {
 		if r := recover(); r != nil {
 			apiLogger.Println("ResetCount failed, ", r)
@@ -148,54 +200,59 @@ func resetCounts(db *sql.DB) {
 
 	recentlyReset := false
 	for {
-		currentTime := time.Now()
-		if currentTime.Hour() == 3 && !recentlyReset {
-			tx, err := db.Begin()
-			handleTransactionError(err, db, tx)
-			query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN dayCount;")
-			_, err = tx.Exec(query)
-			handleTransactionError(err, db, tx)
-			query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN dayCount INT UNSIGNED DEFAULT 0 AFTER count;")
-			_, err = tx.Exec(query)
-			handleTransactionError(err, db, tx)
-			if currentTime.Weekday() == time.Monday {
+		select {
+		case <-exit:
+			break
+		default:
+			currentTime := clock.Now()
+			if currentTime.Hour() == 3 && !recentlyReset {
 				tx, err := db.Begin()
-				handleTransactionError(err, db, tx)
-				query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN weekCount;")
+				handleTransactionError(err, db, tx, clock, exit)
+				query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN dayCount;")
 				_, err = tx.Exec(query)
-				handleTransactionError(err, db, tx)
-				query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN weekCount INT UNSIGNED DEFAULT 0 AFTER dayCount;")
+				handleTransactionError(err, db, tx, clock, exit)
+				query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN dayCount INT UNSIGNED DEFAULT 0 AFTER count;")
 				_, err = tx.Exec(query)
-				handleTransactionError(err, db, tx)
-			}
-			if currentTime.Day() == 1 {
-				tx, err := db.Begin()
-				handleTransactionError(err, db, tx)
-				query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN monthCount;")
-				_, err = tx.Exec(query)
-				handleTransactionError(err, db, tx)
-				query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN monthCount INT UNSIGNED DEFAULT 0 AFTER weekCount;")
-				_, err = tx.Exec(query)
-
-				if currentTime.Month() == time.January {
+				handleTransactionError(err, db, tx, clock, exit)
+				if currentTime.Weekday() == time.Monday {
 					tx, err := db.Begin()
-					handleTransactionError(err, db, tx)
-					query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN yearCount;")
+					handleTransactionError(err, db, tx, clock, exit)
+					query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN weekCount;")
 					_, err = tx.Exec(query)
-					handleTransactionError(err, db, tx)
-					query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN yearCount INT UNSIGNED DEFAULT 0 AFTER monthCount;")
+					handleTransactionError(err, db, tx, clock, exit)
+					query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN weekCount INT UNSIGNED DEFAULT 0 AFTER dayCount;")
 					_, err = tx.Exec(query)
+					handleTransactionError(err, db, tx, clock, exit)
 				}
+				if currentTime.Day() == 1 {
+					tx, err := db.Begin()
+					handleTransactionError(err, db, tx, clock, exit)
+					query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN monthCount;")
+					_, err = tx.Exec(query)
+					handleTransactionError(err, db, tx, clock, exit)
+					query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN monthCount INT UNSIGNED DEFAULT 0 AFTER weekCount;")
+					_, err = tx.Exec(query)
+
+					if currentTime.Month() == time.January {
+						tx, err := db.Begin()
+						handleTransactionError(err, db, tx, clock, exit)
+						query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN yearCount;")
+						_, err = tx.Exec(query)
+						handleTransactionError(err, db, tx, clock, exit)
+						query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN yearCount INT UNSIGNED DEFAULT 0 AFTER monthCount;")
+						_, err = tx.Exec(query)
+					}
+				}
+				err = tx.Commit()
+				if err != nil {
+					handleTransactionError(err, db, tx, clock, exit)
+				}
+				recentlyReset = true
 			}
-			err = tx.Commit()
-			if err != nil {
-				go resetCounts(db)
+			clock.Sleep(3600 * time.Second)
+			if currentTime.Hour() == 4 && recentlyReset {
+				recentlyReset = false
 			}
-			recentlyReset = true
-		}
-		time.Sleep(60 * time.Second)
-		if currentTime.Hour() == 4 && recentlyReset {
-			recentlyReset = false
 		}
 	}
 }
