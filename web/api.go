@@ -198,7 +198,8 @@ func main() {
 	go apiSrv.ListenAndServeTLS(conf.ServerCert, conf.ServerCertKey)
 	go http.ListenAndServe(":80", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		reqhost := strings.Split(r.Host, ":")[0]
-		http.Redirect(w, r, "https://"+reqhost+r.URL.Path+":"+conf.HTTPSport, http.StatusMovedPermanently)
+		apiLogger.Println("Redirecting")
+		http.Redirect(w, r, "https://"+reqhost+"/history", http.StatusMovedPermanently)
 	}))
 	apiLogger.Fatal(frontEndSrv.ListenAndServeTLS(conf.ServerCert, conf.ServerCertKey))
 }

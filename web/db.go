@@ -165,7 +165,7 @@ func printAndExitIfError(err error) {
 }
 
 //in case of transaction error in resetCount, kick off new resetCounts in goroutine and panics with original error
-func handleTransactionError(err error, db *sql.DB, tx *sql.Tx, clock clock, exit <-chan bool) {
+func handleTransactionError(err error, db appDB, tx appTx, clock clock, exit <-chan bool) {
 	if err != nil {
 		tx.Rollback()
 		apiLogger.Println(err.Error())
@@ -179,8 +179,7 @@ type clock interface {
 	Now() time.Time
 	Sleep(d time.Duration)
 }
-type appClock struct {
-}
+type appClock struct{}
 
 func (c appClock) Sleep(d time.Duration) {
 	time.Sleep(d)
@@ -190,8 +189,18 @@ func (c appClock) Now() time.Time {
 	return time.Now()
 }
 
+type appTx interface {
+	Exec(string, ...interface{}) (sql.Result, error)
+	Commit() error
+	Rollback() error
+}
+
+type appDB interface {
+	Begin() (*sql.Tx, error)
+}
+
 //resets counts daily, weekly, monthly and yearly respectivly
-func resetCounts(db *sql.DB, clock clock, exit <-chan bool) {
+func resetCounts(db appDB, clock clock, exit <-chan bool) {
 	defer func() {
 		if r := recover(); r != nil {
 			apiLogger.Println("ResetCount failed, ", r)

@@ -3,7 +3,7 @@ import Numbers from '../components/Numbers';
 import { w3cwebsocket as W3CWebSocket } from "websocket";
 import PPagination from '../components/Pagination';
 
-const client = new W3CWebSocket('wss://' + window.location.hostname + ':8080/ws');
+const client = new W3CWebSocket('wss://' + window.location.hostname + ':2222/ws');
 const API_ENDPOINT = "https://" + window.location.hostname +":2222/top/count/";
 
 
