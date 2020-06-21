@@ -148,14 +148,14 @@ func (d *date) DateString() (string, error) {
 
 func setupConnection(user string, password string, host string, port string, dbName string) *sql.DB {
 	connectionParms := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", user, password, host, port, dbName)
-	db, err := sql.Open("mysql", connectionParms)
+	DB, err := sql.Open("mysql", connectionParms)
 	printAndExitIfError(err)
-	db.SetMaxOpenConns(25)
-	setAC, err := db.Query("SET autocommit = 1;")
+	DB.SetMaxOpenConns(25)
+	setAC, err := DB.Query("SET autocommit = 1;")
 	printAndExitIfError(err)
 	setAC.Close()
 
-	return db
+	return DB
 }
 
 func printAndExitIfError(err error) {
@@ -165,12 +165,11 @@ func printAndExitIfError(err error) {
 }
 
 //in case of transaction error in resetCount, kick off new resetCounts in goroutine and panics with original error
-func handleTransactionError(err error, db appDB, tx appTx, clock clock, exit <-chan bool) {
+func handleTransactionError(err error, DB *sql.DB, tx *sql.Tx, clock clock, exit <-chan bool) {
 	if err != nil {
 		tx.Rollback()
-		apiLogger.Println(err.Error())
 		clock.Sleep(10 * time.Second)
-		go resetCounts(db, clock, exit)
+		go resetCounts(DB, clock, exit)
 		panic(err)
 	}
 }
@@ -189,72 +188,58 @@ func (c appClock) Now() time.Time {
 	return time.Now()
 }
 
-type appTx interface {
-	Exec(string, ...interface{}) (sql.Result, error)
-	Commit() error
-	Rollback() error
-}
-
-type appDB interface {
-	Begin() (*sql.Tx, error)
-}
-
 //resets counts daily, weekly, monthly and yearly respectivly
-func resetCounts(db appDB, clock clock, exit <-chan bool) {
+func resetCounts(DB *sql.DB, clock clock, exit <-chan bool) {
 	defer func() {
 		if r := recover(); r != nil {
 			apiLogger.Println("ResetCount failed, ", r)
 		}
 	}()
-
 	recentlyReset := false
 	for {
 		select {
 		case <-exit:
-			break
+			return
 		default:
 			currentTime := clock.Now()
 			if currentTime.Hour() == 3 && !recentlyReset {
-				tx, err := db.Begin()
-				handleTransactionError(err, db, tx, clock, exit)
+				tx, err := DB.Begin()
+				handleTransactionError(err, DB, tx, clock, exit)
 				query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN dayCount;")
 				_, err = tx.Exec(query)
-				handleTransactionError(err, db, tx, clock, exit)
+				handleTransactionError(err, DB, tx, clock, exit)
 				query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN dayCount INT UNSIGNED DEFAULT 0 AFTER count;")
 				_, err = tx.Exec(query)
-				handleTransactionError(err, db, tx, clock, exit)
+				handleTransactionError(err, DB, tx, clock, exit)
 				if currentTime.Weekday() == time.Monday {
-					tx, err := db.Begin()
-					handleTransactionError(err, db, tx, clock, exit)
+					handleTransactionError(err, DB, tx, clock, exit)
 					query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN weekCount;")
 					_, err = tx.Exec(query)
-					handleTransactionError(err, db, tx, clock, exit)
+					handleTransactionError(err, DB, tx, clock, exit)
 					query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN weekCount INT UNSIGNED DEFAULT 0 AFTER dayCount;")
 					_, err = tx.Exec(query)
-					handleTransactionError(err, db, tx, clock, exit)
+					handleTransactionError(err, DB, tx, clock, exit)
 				}
 				if currentTime.Day() == 1 {
-					tx, err := db.Begin()
-					handleTransactionError(err, db, tx, clock, exit)
+					handleTransactionError(err, DB, tx, clock, exit)
 					query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN monthCount;")
 					_, err = tx.Exec(query)
-					handleTransactionError(err, db, tx, clock, exit)
+					handleTransactionError(err, DB, tx, clock, exit)
 					query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN monthCount INT UNSIGNED DEFAULT 0 AFTER weekCount;")
 					_, err = tx.Exec(query)
 
 					if currentTime.Month() == time.January {
-						tx, err := db.Begin()
-						handleTransactionError(err, db, tx, clock, exit)
+						handleTransactionError(err, DB, tx, clock, exit)
 						query := fmt.Sprintf("ALTER TABLE tale DROP COLUMN yearCount;")
 						_, err = tx.Exec(query)
-						handleTransactionError(err, db, tx, clock, exit)
+						handleTransactionError(err, DB, tx, clock, exit)
 						query = fmt.Sprintf("ALTER TABLE tale ADD COLUMN yearCount INT UNSIGNED DEFAULT 0 AFTER monthCount;")
 						_, err = tx.Exec(query)
 					}
 				}
 				err = tx.Commit()
 				if err != nil {
-					handleTransactionError(err, db, tx, clock, exit)
+					handleTransactionError(err, DB, tx, clock, exit)
 				}
 				recentlyReset = true
 			}
@@ -266,9 +251,9 @@ func resetCounts(db appDB, clock clock, exit <-chan bool) {
 	}
 }
 
-func getNumbers(condition string, db *sql.DB) (*[]*map[string]string, error) {
+func getNumbers(condition string, DB *sql.DB) (*[]*map[string]string, error) {
 	query := fmt.Sprintf("SELECT digit1, digit2, digit3, digit4, digit5, pb, count, dayCount, weekCount, monthCount, yearCount, time from tale  %v", condition)
-	results, err := db.Query(query)
+	results, err := DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -282,9 +267,9 @@ func getNumbers(condition string, db *sql.DB) (*[]*map[string]string, error) {
 	return &combinations, nil
 }
 
-func getNumbersHistory(condition string, db *sql.DB) (*[]*map[string]string, error) {
+func getNumbersHistory(condition string, DB *sql.DB) (*[]*map[string]string, error) {
 	query := fmt.Sprintf("SELECT digit1, digit2, digit3, digit4, digit5, pb, time from history %v", condition)
-	results, err := db.Query(query)
+	results, err := DB.Query(query)
 	if err != nil {
 		return nil, err
 	}

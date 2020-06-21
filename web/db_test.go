@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"os"
 	"testing"
 	"time"
 
@@ -93,26 +96,62 @@ func TestDateString(t *testing.T) {
 }
 
 type mockClock struct {
-	staticTime       time.Time
-	sleepDurationSec time.Duration
+	staticTime time.Time
 }
 
 func (c mockClock) Now() time.Time        { return c.staticTime }
-func (c mockClock) Sleep(d time.Duration) { time.Sleep(c.sleepDurationSec * time.Second) }
+func (c mockClock) Sleep(d time.Duration) {}
 
 func TestResetCounts(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	apiLogger = log.New(os.Stdout, t.Name()+": ", log.LstdFlags)
+	dbMock, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
-	defer db.Close()
+	defer dbMock.Close()
 	mock.ExpectBegin()
-	mock.ExpectExec("ALTER TABLE tale DROP COLUMN dayCount;")
-	//clockMock := mockClock{time.Date(2020, time.January, 11, 3, 5, 0, 0, time.UTC), 1}
+	mock.ExpectExec("ALTER TABLE tale DROP COLUMN dayCount;").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("ALTER TABLE tale ADD COLUMN dayCount INT UNSIGNED DEFAULT 0 AFTER count;").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("ALTER TABLE tale DROP COLUMN weekCount;").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("ALTER TABLE tale ADD COLUMN weekCount INT UNSIGNED DEFAULT 0 AFTER dayCount;").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("ALTER TABLE tale DROP COLUMN monthCount;").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("ALTER TABLE tale ADD COLUMN monthCount INT UNSIGNED DEFAULT 0 AFTER weekCount;").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("ALTER TABLE tale DROP COLUMN yearCount;").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("ALTER TABLE tale ADD COLUMN yearCount INT UNSIGNED DEFAULT 0 AFTER monthCount;").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+	// This time should trigger all resets
+	clockMock := &mockClock{time.Date(2018, time.January, 1, 3, 5, 0, 0, time.UTC)}
 	exitChan := make(chan bool)
-	time.AfterFunc(2*time.Second, func() { exitChan <- true })
-	//resetCounts(db, clockMock, exitChan)
+	time.AfterFunc(2*time.Millisecond, func() { exitChan <- true })
+	resetCounts(dbMock, clockMock, exitChan)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestHandleTransactionError(t *testing.T) {
+	apiLogger = log.New(os.Stdout, t.Name()+": ", log.LstdFlags)
+	dbMock, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer dbMock.Close()
+	mock.ExpectBegin()
+	mock.ExpectExec("ALTER TABLE tale DROP COLUMN dayCount;").WillReturnError(fmt.Errorf("expected testing error"))
+	mock.ExpectRollback()
+	mock.ExpectBegin()
+	mock.ExpectExec("ALTER TABLE tale DROP COLUMN dayCount;").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("ALTER TABLE tale ADD COLUMN dayCount INT UNSIGNED DEFAULT 0 AFTER count;").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+	clockMock := &mockClock{time.Date(2020, time.January, 11, 3, 5, 0, 0, time.UTC)}
+	exitChan := make(chan bool)
+	time.AfterFunc(2*time.Millisecond, func() {
+		exitChan <- true
+		exitChan <- true
+	})
+	resetCounts(dbMock, clockMock, exitChan)
+	<-exitChan
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations in resetCounts: %s", err)
 	}
 }
