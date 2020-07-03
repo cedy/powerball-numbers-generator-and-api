@@ -25,7 +25,7 @@ class NumbersContainer extends React.Component {
     }
 
     loadPage(page) {
-        fetch(API_ENDPOINT + page)
+        fetch(API_ENDPOINT + (page-1))
         .then((resonse) => resonse.json())
             .then((response_json) => {
                 let numbersList = {};

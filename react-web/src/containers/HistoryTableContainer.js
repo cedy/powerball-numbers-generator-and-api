@@ -27,7 +27,7 @@ class HistoryTableContainer extends React.Component {
     }
     
     loadPageData(pageNumber) {
-        fetch(API_ADDRESS + "/history/page/" + pageNumber)
+        fetch(API_ADDRESS + "/history/page/" + (pageNumber-1))
             .then((res) => res.json())
             .then(
                 (result) => {

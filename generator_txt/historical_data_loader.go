@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"os"
 	"strings"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type pbCombination struct {
@@ -22,7 +23,7 @@ func parseLine(line string) pbCombination {
 }
 
 func constructQuery(data pbCombination) *string {
-	query := "INSERT INTO history (hash, digit1, digit2, digit3, digit4, digit5, pb, time) " +
+	query := "INSERT IGNORE INTO history (hash, digit1, digit2, digit3, digit4, digit5, pb, time) " +
 		"VALUES (%s, %s, %s, %s, %s, %s, %s, '%s')"
 	hash := strings.Join(data.numbers, "")
 	//01/31/2019 month/date/year
