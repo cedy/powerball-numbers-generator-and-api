@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"testing"
@@ -130,7 +131,7 @@ func TestResetCounts(t *testing.T) {
 }
 
 func TestHandleTransactionError(t *testing.T) {
-	apiLogger = log.New(os.Stdout, t.Name()+": ", log.LstdFlags)
+	apiLogger = log.New(ioutil.Discard, t.Name()+": ", log.LstdFlags)
 	dbMock, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)

@@ -163,6 +163,7 @@ func main() {
 		go writeCombinationsToDB(db, numbersChan)
 	}
 	go broadcastCombinations(broadcastChan, broadcastCommChan)
+	go RunParseLatestPBCombination(db, &appClock{}, apiLogger)
 	router := mux.NewRouter()
 	webLoggerWrapper := loggingMiddleware(webLogger)
 	loggedRouter := webLoggerWrapper(router)
