@@ -1,9 +1,9 @@
 # powerball-numbers-generator-and-api
 
-#Disclaimer
+# Disclaimer
 I started creating this project with zero knowledge of Go. I'm refactoring it along with my growing knowledge and understanding of Go and its philosophy.
 
-## Overview
+## OverviewS
 Powerball combination generator and web UI to display the data. 
 
 Backend is written in Go and has few main components. 
